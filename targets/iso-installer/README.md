@@ -36,81 +36,81 @@ This guide requires
 
    The installer bundles the HTTP module and uses the Nixpkgs revision from the ISO build.
 
+   (Instead of burning the ISO to a USB drive and performing the remaining steps on a real machine, you can also try this in a virtual machine by running `$ ./build.sh && ./try-in-vm.sh`.)
+
 4. Boot from the USB drive.
+
+   If you need a German keyboard layout:
+
+   ```console
+   $ /iso/dist/0-configure-keyboard.sh
+   ```
+
 5. Create the LUKS key file:
 
    ```console
-   $ /dist/create-luks-key.sh
+   $ /iso/dist/1-create-luks-key.sh
    ```
 
-6. If you want to dual-boot Windows, reuse the existing ESP partition without formatting or resizing it:
+6. If you want to dual-boot Windows, reuse the existing ESP partition without formatting or resizing it. You will effectively have to do something like this:
 
    ```console
-   $ rm /dist/repart.d/0-esp.conf
+   $ rm /iso/dist/repart.d/0-esp.conf
    ```
 
-   (This might fail if that file is read-only; I have not tried this yet.)
+   This will fail because `/iso/dist/` is in a read-only file system. You must copy all but `0-esp.conf` somewhere else and point to that directory.
 
 7. Create and format partitions:
 
    ```console
-   $ /dist/repart.sh
+   $ /iso/dist/2-repart.sh
    ```
 
-8. Find the newly created `crypto_LUKS` partition on the selected disk:
+8. Open the new LUKS root partition. Replace `/dev/nvme0n1` with the disk you just partitioned:
 
    ```console
-   $ lsblk -o PATH,SIZE,FSTYPE,PARTUUID,MOUNTPOINTS
+   $ /iso/dist/3-open-luks.sh /dev/nvme0n1
    ```
 
-   Replace `ROOT_PARTUUID` with that partition's `PARTUUID`, then open the container:
-
-   ```console
-   $ sudo cryptsetup open /dev/disk/by-partuuid/ROOT_PARTUUID nixos-root
-   ```
+   (If more than one partition is listed, use the output from step 7 to identify the new one.)
 
    The unlocked device is `/dev/mapper/nixos-root`.
 
-9. Mount the unlocked root at `/mnt` and the ESP at `/mnt/boot`. Replace `ESP_PARTUUID` with the `PARTUUID` of the ESP:
+9. Mount the unlocked root and the EFI System Partition (ESP):
 
    ```console
-   $ sudo mount /dev/mapper/nixos-root /mnt
-
-   $ sudo mkdir -p /mnt/boot
-   $ lsblk -o PATH,SIZE,FSTYPE,PARTUUID,MOUNTPOINTS
-   $ sudo mount /dev/disk/by-partuuid/ESP_PARTUUID /mnt/boot
+   $ /iso/dist/4-mount-fs-for-installing.sh
    ```
 
-   Verify both mounts before continuing.
+   (If several ESPs are listed, use the device path to identify the right one)
 
-   ```console
-   $ findmnt -R /mnt
-   ```
-
-   (During installation, `/mnt` represents the root of your future operating system.)
-
-10. Copy the bundled configuration to the target and generate its hardware configuration:
+10. Verify that both `/mnt` and `/mnt/boot` are listed:
 
     ```console
-    $ sudo install -Dm644 -t /mnt/etc/nixos /etc/nixos/*.nix
-    $ sudo nixos-generate-config --root /mnt
+    $ /iso/dist/5-verify-mounts.sh
     ```
 
-11. The installer needs internet to download packages. Connect to the internet:
+    (During installation, `/mnt` represents the root of your future operating system.)
+
+11. Copy the bundled configuration to the target and generate its hardware configuration:
 
     ```console
-    $ /dist/connect-to-internet.sh
+    $ /iso/dist/6-prepare-nixos-config.sh
     ```
 
-12. Install NixOS:
+12. The installer needs internet to download packages. If you're not already online (for example, over Ethernet), connect to Wi-Fi:
 
     ```console
-    $ nixos-install
+    $ /iso/dist/7-connect-to-wifi.sh
     ```
 
-    (`nixos-install` uses `/mnt` to map out the new installation.)
+13. Install NixOS:
 
-13. Reboot:
+    ```console
+    $ /iso/dist/8-install-nixos.sh
+    ```
+
+14. Reboot:
 
     ```console
     $ sudo reboot now

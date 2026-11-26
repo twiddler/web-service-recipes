@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-loadkeys de
+findmnt -R /mnt
