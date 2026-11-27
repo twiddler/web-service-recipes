@@ -34,7 +34,7 @@ This guide requires
 
    Burning erases the selected USB drive.
 
-   The installer bundles the HTTP module and uses the Nixpkgs revision from the ISO build.
+   The installer bundles the selected example and uses the nixpkgs revision from the ISO build.
 
    (Instead of burning the ISO to a USB drive and performing the remaining steps on a real machine, you can also try this in a virtual machine by running `$ ./build.sh && ./try-in-vm.sh`.)
 
